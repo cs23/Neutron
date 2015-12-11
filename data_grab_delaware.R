@@ -1,7 +1,8 @@
 library(readr)
 library(stringr)
 library(dplyr)
-
+# Grabs University of Delaware Bartol Neutron Count ASCII data format and 
+# returns a data frame tbl (dplyr friendly)
 data_grab_delaware = function(file_location) {
   main_data = read_lines(file_location)
   parse_limits = grep("\\*", main_data)
@@ -26,3 +27,6 @@ data_grab_delaware = function(file_location) {
   colnames(main_data) = header_bottom_split
   return(main_data)
 }
+# Testing
+# file_location = "ftp://ftp.bartol.udel.edu/pyle/BRIData/BRI2014.txt"
+# test = data_grab_delaware(file_location)
