@@ -13,5 +13,5 @@ Aggregation Pipeline
 
 Statistical Analysis Pipeline
   * Geostatistical analysis with kriging
-    - Test prediction capabilities with cross-validation (leave 1 station out)
+    - Test prediction capabilities with cross-validation (leave 1 station out) for all 8 stations then average
   * Visualizations
