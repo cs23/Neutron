@@ -15,6 +15,6 @@ get_neutron_count_data = function(bartol_table_url, years = 2014){
 }
 # Testing
 # bartol_url = "http://neutronm.bartol.udel.edu/~pyle/bri_table.html"
-# data_test = get_neutron_count_data(bartol_url, 2012:2014) # Gets 2012, 2013, and 2014 data
-# data_test = get_neutron_count_data(bartol_url) # Gets 2014 data only
-# data_test = get_neutron_count_data(bartol_url, 1958) # Gets 1958 data only
+# neutron_counts_tidy = get_neutron_count_data(bartol_url, 2012:2014) # Gets 2012, 2013, and 2014 data
+# neutron_counts_tidy = get_neutron_count_data(bartol_url) # Gets 2014 data only
+# neutron_counts_tidy = get_neutron_count_data(bartol_url, 1958) # Gets 1958 data only

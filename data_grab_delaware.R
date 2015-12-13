@@ -2,7 +2,8 @@ library(readr)
 library(stringr)
 library(dplyr)
 # Grabs University of Delaware Bartol Neutron Count ASCII data format and 
-# returns a data frame tbl (dplyr friendly)
+# returns a data frame tbl (dplyr friendly). All dates stays in character 
+# format for better matching with Forecast.io API time format.
 data_grab_delaware = function(file_location) {
   main_data = read_lines(file_location)
   parse_limits = grep("\\*", main_data)
@@ -23,7 +24,7 @@ data_grab_delaware = function(file_location) {
     header_bottom_split[index[i]+1] = paste0(header_bottom_split[index[i]+1], "_", header_top_split[i])
     header_bottom_split[index[i]+2] = paste0(header_bottom_split[index[i]+2], "_", header_top_split[i])
   }
-  main_data = tbl_df(read.table(textConnection(main_data)))
+  main_data = tbl_df(read.table(textConnection(main_data), colClasses = c(rep("character", 5), rep("numeric", 12))))
   colnames(main_data) = header_bottom_split
   return(main_data)
 }
