@@ -24,7 +24,7 @@ selected_data = final_data %>%
 library(maps)
 world = map_data("world")
 p = ggplot(legend=FALSE) +
-  geom_polygon(data=world, aes(x=long, y=lat,group=group), color = "gray60", fill = "gray95") + 
+  geom_polygon(data=world, aes(x=long, y=lat,group=group), color = "gray85", fill = "gray95") + 
   theme_bw() + 
   labs(x = "Longitude",
        y = "Latitude")
@@ -33,7 +33,7 @@ locations = selected_data %>% group_by(Station) %>% distinct() %>% select(Statio
 
 graphic1 = p + geom_point(data = locations, aes(x = Lon, y = Lat), color = "red", size = 4) +
   geom_text(data = locations, 
-            aes(label = Station, x = Lon, y = Lat-5, size = 10, color = "darkred"), show_guide = FALSE)
+            aes(label = Station, x = Lon, y = Lat-7, size = 12, color = "darkred", fontface = 4), show_guide = FALSE)
 # ggsave("neutron_map.pdf", graphic1)
 
 plot_data = selected_data %>% mutate(Date = as.Date(paste(Year, Month, Day, sep = "-"))) %>% select(Date, Station, Corr_Count, Pressure, Alt)
