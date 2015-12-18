@@ -1,0 +1,149 @@
+\documentclass[letter,12pt]{article}
+\usepackage[titletoc,title]{appendix}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage{gensymb}
+\usepackage{fancyhdr}
+\usepackage{float}
+\usepackage{enumitem}
+\usepackage{booktabs,colortbl,xcolor}
+\usepackage{caption}
+\usepackage{geometry}
+\usepackage{hyperref}
+\hypersetup{
+colorlinks=true,
+linkcolor=black,
+filecolor=blue,      
+urlcolor=blue,
+}
+\urlstyle{same}
+\geometry{letterpaper, portrait, margin=0.75in}
+\newgeometry{top=1in,bottom=0.75in,right=0.75in,left=0.75in}
+\usepackage{lastpage}
+\usepackage[compact]{titlesec}
+\usepackage{setspace}
+
+\setlength{\parindent}{4em}
+\setlength{\parskip}{1em}
+\renewcommand{\baselinestretch}{1.5}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[LE,RO]{STAT 575 - Final Report}
+\fancyhead[RE,LO]{Neutron Count Monitoring}
+
+\rfoot{Page \thepage \hspace{1pt} of \pageref{LastPage}}
+\fancyfoot[RE,LO]{Casey Shanks}
+
+<<load_analysis, cache=FALSE, echo=FALSE, warning=FALSE>>=
+suppressMessages(source("statistical_analysis.R"))
+@
+ 
+\title{Neutron Count Monitoring}
+\author{Casey Shanks}
+\date{December 18th, 2015}
+ 
+\begin{document}
+\maketitle
+\section{Introduction}
+
+Neutrons are subatomic neutral particles emitted by radioactive materials. There are two primary sources of neutrons in the world. The overwhelming majority of neutrons come from cosmic sources, such as our own sun. The sun along with other stars can be thought of as an gigantic nuclear reactor that spew neutrons all over the universe. The other source of neutrons come from man-made sources such as reactors and nuclear weapons. It is presumed that with accurate modeling of cosmic neutrons, man-made sources can be detected. However, there are significant large spatio-temporal variations in cosmic neutrons impacting the Earth's surface. These variations also can potentially include weather and elevation effects. This report seeks to construct a statistical model that could be used in the future to create a map to model cosmic neutron penetration of the Earth. The consultant's collaboration partners hypothesize that Earth's surface neutron flux is primarily dependent (in order of importance) on elevation above sea level, longitudinal/latitudinal variation due to the Earth's magnetic field, and weather effects such as moisture content.
+
+\section{Objectives}
+\begin{spacing}{0.9}
+\begin{enumerate}
+  \item Is there evidence of spatial auto-correlation of neutron counts?
+  \begin{enumerate}
+    \item If so, can we quantify the spatial auto-correlation with a semivariogram?
+  \end{enumerate}
+  \item Is there a relationship between altitude, meteorological characteristics and neutron counts?
+  \item Predict neutron counts in Madison, WI for the year 2014.
+\end{enumerate}
+\end{spacing}
+
+\section{Methods}
+Prior to analysis two different sources of data had to be merged. The first data set are the neutron counts for eight different stations around the world controlled by the University of Delaware Bartol Research Institute Neutron Monitor Program. Links to yearly data can be found for the eight stations at \url{http://neutronm.bartol.udel.edu/~pyle/bri_table.html}. Despite some count data being recorded from 1957, this analysis will consist of observations from the year 2014 only. Inside each yearly link is a listing of the stations, neutron counts per hour and pressure readings in millibars measured hourly. Each station operates continuously except for maintenance. For a given year there are two links listing four stations each. These stations were combined into a single database and mean counts and mean pressure readings were accumulated by the day. This is how 70,080 unique hourly observations were aggregated into 2,920 daily observations. Spatial data in the WGS84 coordinate system along with altitude data were harvested manually for the eight stations and were merged with the daily mean count data. Spatial variation will used in lieu of magnetic field variation. Figure 1 shows the spatial distribution of the eight neutron stations.
+
+<<figure1, echo=FALSE, fig.align='center', fig.cap="Location of Bartol Neutron Monitoring Stations - Mercator Projection.", fig.width=7, fig.height=4, fig.show='asis', fig.pos='H'>>=
+graphic1
+@
+
+\noindent
+The second type of data used for this analysis is weather data. Given a latitude, longitude, and past time, \href{http://forecast.io}{forecast.io} provides an API to harvest daily weather. \href{http://forecast.io}{Forecast.io} provides 19 different meteorological variables including a verbal summary, moon phase, type of precipitation, minimum and maximum temperatures, dew point, humidity, wind speed and bearing and visibility measurements for the day. Finally, this data was merged with the count-spatial data. These two components of the data harvesting pipeline have R code built and maintained at \href{https://github.com/cs23/Neutron}{https://github.com/cs23/Neutron}.
+
+\noindent
+The wide geographical dispersion between the stations introduces some problems in the analysis. Principally, there is no ideal way to transform spherical coordinates such as WGS84 to a 2D representation without introducing some type of distortion in the area, shape, direction, bearing, distance or scale properties of the 2D map. For example, the Mercator projection shown in Figure 1 distorts the the land near the poles to be much larger than in reality. The benefit to this type of projection is that it is suited for marine navigation by keeping bearings straight in addition to being easily hung on a grade school wall since it is rectangular. With the exception of the Newark station, there are stations that are Arctic and Antarctic. Using WGS84 coordinates introduces problems with kriging because there are no variogram models that are suitable for non-Euclidean distances. calculating the distance which is required for the semivariogram used in spatial kriging.
+
+\noindent
+Testing for spatial auto-correlation is the first step in this analysis. If there is evidence that the count data is spatially auto-correlated then spatial kriging techniques can be applied. Application of Moran's I will be used to substantiate proof of spatial auto-correlation. Since this data is spatial-temporal, slice wise spatial-temporal kriging will be used. This involves fitting a variogram model for each time slice. The slice wise approach is more straight forward to implement compared to a pooled method where a variogram is fit based on all available spatial-temporal data. Cross-validation will be used to assess how well the spatial prediction works using a leave-one-out approach.
+
+<<figure2, echo=FALSE, fig.align='center', fig.cap="Neutron Flux Count by Station for 2014", fig.width=7, fig.height=4, fig.show='asis', fig.pos='H'>>=
+graphic2
+@
+
+\section{Results}
+Moran's I is used to test for the presence of spatial auto-correlation. Looking at Figure 3 while setting a significance level of .05 (the red line), it shows that a very small minority (25 total) of the days showed evidence of spatial auto-correlation. 
+
+<<figure3, echo=FALSE, fig.align='center', fig.cap="Moran's I Test for Spatial Autocorrelation by Day in 2014", fig.width=7, fig.height=4, fig.show='asis', fig.pos='H'>>=
+graphic3
+@
+
+Based on the lack of evidence to support the existence of spatial auto-correlation, a standard ordinary linear model can be used. Since the counts are averaged over the day, Poisson regression is not needed. Ordinary linear regression has advantages with ease of interpretation of the coefficients. Starting with the following non-spatial Model 1: 
+
+\noindent
+$ {NeutronCount} = \mu + \beta_{1} pressure_{t} + \beta_{2}  altitude_{t} + \beta_{3}  precipIntensity_{t} + \beta_{4}  dewPoint_{t} + \beta_{5}  humidity_{t} + \beta_{6}  visibility_{t} + \beta_{7}  temperature_{t} + \epsilon$
+
+<<first_regression_results,results='asis',echo=F, fig.show='asis', fig.pos='H'>>=
+print_first_reg_tab = xtable(test, caption = "Summary of Non-spatial Model 1")
+align(print_first_reg_tab) = "|r|r|r|r|r|"
+print(print_first_reg_tab)
+# print_first_reg_tab = xtable(test, caption = "Odds Ratio for Emergence with 95\\% Confidence Intervals")
+@
+
+\noindent
+We can see that Altitude, Precipitation Intensity and Visibility are significant in Table 1. The measure of goodness of fit, $R^{2}$ is \Sexpr{summary(test)$r.squared} which indicates poor overall predictive capability. Perhaps this is due to the zero counts as seen in Figure 2. Removing these zero count values yields an improved model where $R^{2}$ rises to \Sexpr{summary(test2)$r.squared}, Pressure and Humidity also become significant as seen in Table 2.
+
+<<second_regression_results,results='asis',echo=F, fig.show='asis', fig.pos='H'>>=
+print_second_reg_tab = xtable(test2, caption = "Summary of Non-spatial Model 2")
+align(print_second_reg_tab) = "|r|r|r|r|r|"
+print(print_second_reg_tab)
+@
+
+\noindent
+Finally, stripping the observations where there is missing weather data as \href{http://forecast.io}{Forecast.io} does not provide complete data in every situation, yields non-spatial Model 3. The $R^{2}$ becomes \Sexpr{summary(test3)$r.squared} meaning the model can explain approximately \Sexpr{round(summary(test3)$r.squared * 100,0)}\% of the neutron counts. Table 3 shows the coefficients along with standard errors. Interpretation is straightforward. Holding all other covariates constant, a one meter increase in altitude will yield 7.88 more neutrons per hour for that day.  
+
+<<third_regression_results,results='asis',echo=F, fig.show='asis', fig.pos='H'>>=
+print_third_reg_tab = xtable(test3, caption = "Summary of Non-spatial Model 3 (Best)")
+align(print_third_reg_tab) = "|r|r|r|r|r|"
+print(print_third_reg_tab)
+@
+
+\noindent
+Comparison of the full non-spatial Model 3 to a null model containing only the significant predictors, Altitude, Pressure, PrecipIntensity, Humidity and Visibility can be done using a $\chi^2$ test. The p-value for this statistic is \Sexpr{anova(test3_null, test3)$"Pr(>F)"[2]} which is well below the .05 threshold. This means that there is good reason to use the full version of Model 3.
+
+\noindent
+For fun, we can use Model 3 to predict neutron counts for Madison, WI during 2014. The results are shown below in Figure 4. Notice that the neutron counts are abnormally larger than the other stations. This means that there are still unknown sources of variation in the neutron count model.
+
+<<figure4, echo=FALSE, fig.align='center', fig.cap="Prediction of Neutron Flux Count for Madison, WI in 2014", fig.width=7, fig.height=4, fig.show='asis', fig.pos='H'>>=
+graphic4
+@
+
+\section{Discussion}
+In retrospect, any attempt to do spatial regression and kriging to build a model for the entire world using eight locations is futile. Spatial regression works well when the area one is trying to make predictions for is well saturated with geostatistical locations. If the cutoff for the p-values generated by Moran's I was increased then the results would show that a spatial variation component is present. It seemed prudent to set the cutoff value at .05 in the consultant's view because of the limited number of stations. Just because there is spatial data does not mean that one must use a particular spatial analysis method. To that end, there is a larger database of neutron count monitors available at \href{http://www.nmdb.eu/}{NMDB: Neutron Monitor Database}. There is a better spatial distribution of those stations as seen in Figure 5. Future work will involve writing a data harvesting pipeline to tap into their sources. More work needs to be done to standardize neutron count measurements across a variety of collaborator instrumentation. For this research, it was assumed that the neutron counter apparatus was similar at all stations. Perhaps the choice of aggregation unit, day, is poorly suited. Using the original hourly data may produce a better fitting model.
+
+\begin{figure}[h]
+\includegraphics[scale=.6]{neutron_map_nmdb.png}
+\centering
+\caption{Current Status of NMDB Station Activity}
+\end{figure}
+
+\noindent
+Space weather was not quantified in this analysis. Measurements of Earth's magnetic field were not available either. The collaboration partners for this research believe that neutron flux is dependent on both of these predictors. 
+
+\noindent
+It should be noted that Model 3 used a fraction (about $\frac{2}{5}$) of the number of original 2,920 observations for its coefficient estimation. This reduction is due to the fact that \href{http://forecast.io}{forecast.io} still has gaps in their weather data products. According to their website, they acknowledge that their output is ``aggregated together statistically" across 19 different data sources. It is likely that many of these primary data sources are also a product of aggregation before they reach \href{http://forecast.io}{forecast.io}.
+
+\section{Conclusion}
+In summary, it was determined that there was insufficient evidence for spatial auto-correlation between the eight neutron monitor stations. It was shown that a station's elevation above sea level was a highly significant predictor (p-value $\approx$ 0) in determination of the daily neutron count at a given station. Each meter increase in altitude shows almost 8 more neutrons per hour on average for a day. Air pressure, precipitation intensity, humidity, and visibility were also highly significant for neutron flux. All of those meteorological variables showed positive correlation with neutron flux. Predicting neutron flux for Madison, WI based off weather measurements shows that these the neutron flux model still have large unexplained errors.
+
+\end{document}
